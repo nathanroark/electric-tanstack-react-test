@@ -7,6 +7,7 @@ import { Example } from "./Example"
 import logo from "./assets/logo.svg"
 import "./App.css"
 import "./style.css"
+// import DynamicBarChart from "./components/dynamic-bar-chart"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,7 +34,7 @@ export default function App() {
           persistOptions={{ persister }}
         >
           <Example />
-          {/* <Spectrogram /> */}
+          {/* <DynamicBarChart /> */}
         </PersistQueryClientProvider>
       </header>
     </div>
