@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import * as d3 from 'd3';
-import './spectrogram.css'; // Basic CSS styling for SVG
 
-const DynamicBarChart: React.FC = () => {
+const Spectrogram: React.FC = () => {
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const [data, setData] = useState<number[]>([30, 86, 168, 281, 303, 365]);
+  const [dataStream, setDataStream] = useState<number[][]>([]);
+  const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!svgRef.current) return;
@@ -12,61 +12,88 @@ const DynamicBarChart: React.FC = () => {
     const svg = d3.select(svgRef.current);
     const width = 800;
     const height = 400;
-
-    // Clear previous renders
-    svg.selectAll('*').remove();
-
+    
     // Set up the SVG canvas
     svg
       .attr('width', width)
       .attr('height', height)
       .style('border', '1px solid black');
 
-    // Define scales
-    const xScale = d3.scaleBand()
-      .domain(data.map((_, index) => index.toString())) // Create a band for each data point
-      .range([0, width])
-      .padding(0.1); // Add some padding between bars
+    // Scales and axes
+    const xScale = d3.scaleLinear().range([0, width]);
+    const yScale = d3.scaleLinear().range([height, 0]);
 
-    const yScale = d3.scaleLinear()
-      .domain([0, d3.max(data)!]) // Scale from 0 to the max value in the data
-      .range([height, 0]); // Inverted because SVG's y-axis starts at the top
+    // Log scale for color to better represent signal power in RF spectrograms
+    const colorScale = d3.scaleSequential(d3.interpolateTurbo).domain([-40, 0]); // dB scale example
 
-    // Create bars
-    svg.selectAll('rect')
-      .data(data)
-      .enter()
-      .append('rect')
-      .attr('x', (_, index) => xScale(index.toString())!) // Position each bar
-      .attr('y', y => yScale(y)) // Set the height of each bar
-      .attr('width', xScale.bandwidth()) // Set the width based on the scale
-      .attr('height', y => height - yScale(y)) // Set the height of the bar
-      .attr('fill', 'steelblue'); // Fill color for the bars
+    // Render function to update the spectrogram with new data
+    const render = (data: number[][]) => {
+      const maxFrequency = 100; // Adjust this to match realistic RF frequencies
+      const maxTime = data.length;
 
-    // Add x-axis
-    svg.append('g')
-      .attr('transform', `translate(0,${height})`) // Move the axis to the bottom of the SVG
-      .call(d3.axisBottom(xScale).tickFormat(index => `Item ${index}`));
+      xScale.domain([0, maxTime]);
+      yScale.domain([0, maxFrequency]);
 
-    // Add y-axis
-    svg.append('g')
-      .call(d3.axisLeft(yScale));
-  }, [data]); // Redraw the chart whenever data changes
+      const rectWidth = width / maxTime;
+      const rectHeight = height / maxFrequency;
 
-  // Function to add a new random data point
-  const addDataPoint = () => {
-    const newPoint = Math.floor(Math.random() * 400); // Random number for demonstration
-    setData(prevData => [...prevData, newPoint]);
+      svg.selectAll('rect').remove();
+
+      // Update the spectrogram with new data
+      svg
+        .selectAll('rect')
+        .data(data.flatMap((d, i) => d.map((value, j) => ({ value, x: i, y: j }))))
+        .enter()
+        .append('rect')
+        .attr('x', d => xScale(d.x))
+        .attr('y', d => yScale(d.y))
+        .attr('width', rectWidth)
+        .attr('height', rectHeight)
+        .attr('fill', d => colorScale(Math.max(-40, 20 * Math.log10(d.value)))); // Converting to dB scale
+    };
+
+    render(dataStream);
+
+  }, [dataStream]);
+
+  // Function to simulate RF data stream
+  const startDataStream = () => {
+    if (intervalId) return; // Prevent multiple intervals
+
+    const id = setInterval(() => {
+      setDataStream(prev => {
+        // Generate realistic RF-like signals with sine waves and noise
+        const frequencyCount = 100;
+        const newData = Array.from({ length: frequencyCount }, (_, freqIdx) => {
+          const baseSignal = Math.sin(2 * Math.PI * (freqIdx / frequencyCount));
+          const noise = Math.random() * 0.3; // Simulated noise
+          return baseSignal + noise;
+        });
+        
+        const updatedData = [...prev, newData];
+        if (updatedData.length > 300) updatedData.shift(); // Limit the data stream length
+        return updatedData;
+      });
+    }, 1);
+
+    setIntervalId(id);
+  };
+
+  // Function to stop the data stream
+  const stopDataStream = () => {
+    if (intervalId) {
+      clearInterval(intervalId);
+      setIntervalId(null);
+    }
   };
 
   return (
     <div>
-      <button className="button" onClick={addDataPoint}>
-        Add Data Point
-      </button>
+      <button className="button" onClick={startDataStream}>Start</button>
+      <button className="button" onClick={stopDataStream}>Stop</button>
       <svg ref={svgRef}></svg>
     </div>
   );
-};
+}
 
-export default DynamicBarChart;
+export default Spectrogram;

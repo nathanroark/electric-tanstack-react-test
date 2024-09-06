@@ -1,13 +1,11 @@
 import { QueryClient } from "@tanstack/react-query"
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client"
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister"
-// import Spectrogram from "./components/spectrogram"
-
-import { Example } from "./Example"
+import { Example } from "./components/Example"
 import logo from "./assets/logo.svg"
-import "./App.css"
-import "./style.css"
-// import DynamicBarChart from "./components/dynamic-bar-chart"
+import "@/styles/App.css"
+import "@/styles/style.css"
+import Spectrogram from "./components/spectrogram"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,7 +32,7 @@ export default function App() {
           persistOptions={{ persister }}
         >
           <Example />
-          {/* <DynamicBarChart /> */}
+          <Spectrogram />
         </PersistQueryClientProvider>
       </header>
     </div>

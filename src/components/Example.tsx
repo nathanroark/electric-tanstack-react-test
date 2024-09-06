@@ -4,9 +4,9 @@ import {
   useMutationState,
   useQueryClient,
 } from "@tanstack/react-query"
-import { matchStream } from "./match-stream"
+import { matchStream } from "../match-stream"
 import { v4 as uuidv4 } from "uuid"
-import "./Example.css"
+import "@/styles/Example.css"
 
 type Item = { id: string }
 
